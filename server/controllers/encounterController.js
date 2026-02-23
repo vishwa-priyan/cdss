@@ -9,9 +9,17 @@ export async function list(req, res) {
   const offset = (page - 1) * limit;
 
   if (patientId) {
+    const safeLimit = Number(limit);
+    const safeOffset = Number(offset);
+
     const encounters = await query(
-      'SELECT e.*, p.name AS patient_name FROM encounters e JOIN patients p ON p.id = e.patient_id WHERE e.patient_id = ? ORDER BY e.visit_date DESC LIMIT ? OFFSET ?',
-      [patientId, limit, offset]
+      `SELECT e.*, p.name AS patient_name 
+      FROM encounters e 
+      JOIN patients p ON p.id = e.patient_id 
+      WHERE e.patient_id = ?
+      ORDER BY e.visit_date DESC 
+      LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      [patientId]
     );
     const [c] = await query('SELECT COUNT(*) AS total FROM encounters WHERE patient_id = ?', [patientId]);
     return res.json({
@@ -20,10 +28,15 @@ export async function list(req, res) {
     });
   }
 
+  const safeLimit = Number(limit);
+  const safeOffset = Number(offset);
+
   const encounters = await query(
-    `SELECT e.*, p.name AS patient_name, p.id AS patient_id FROM encounters e JOIN patients p ON p.id = e.patient_id
-     ORDER BY e.visit_date DESC LIMIT ? OFFSET ?`,
-    [limit, offset]
+    `SELECT e.*, p.name AS patient_name, p.id AS patient_id 
+    FROM encounters e 
+    JOIN patients p ON p.id = e.patient_id
+    ORDER BY e.visit_date DESC 
+    LIMIT ${safeLimit} OFFSET ${safeOffset}`
   );
   const [c] = await query('SELECT COUNT(*) AS total FROM encounters');
   res.json({
