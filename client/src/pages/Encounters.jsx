@@ -21,7 +21,7 @@ export default function Encounters() {
 
   return (
     <div>
-      <h1 style={{ marginTop: 0 }}>Encounters</h1>
+      <h1 style={{ marginTop: 0 }}>Visits</h1>
       <div className="card">
         {loading ? (
           <div className="loading">Loading...</div>
@@ -40,7 +40,7 @@ export default function Encounters() {
               <tbody>
                 {encounters.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="empty">No encounters</td>
+                    <td colSpan={5} className="empty">No visits</td>
                   </tr>
                 )}
                 {encounters.map((e) => (

@@ -51,7 +51,7 @@ export async function getById(req, res) {
     'SELECT e.*, p.name AS patient_name, p.id AS patient_id FROM encounters e JOIN patients p ON p.id = e.patient_id WHERE e.id = ?',
     [id]
   );
-  if (!encounter) return res.status(404).json({ message: 'Encounter not found' });
+  if (!encounter) return res.status(404).json({ message: 'Visit not found' });
   encounter.vitals = await query('SELECT * FROM vitals WHERE encounter_id = ?', [id]);
   encounter.symptoms = await query('SELECT * FROM symptoms WHERE encounter_id = ?', [id]);
   encounter.lab_reports = await query('SELECT * FROM lab_reports WHERE encounter_id = ?', [id]);
@@ -135,7 +135,7 @@ export async function getReportPdf(req, res) {
     'SELECT e.*, p.name AS patient_name, p.age, p.gender, p.contact FROM encounters e JOIN patients p ON p.id = e.patient_id WHERE e.id = ?',
     [id]
   );
-  if (!encounter) return res.status(404).json({ message: 'Encounter not found' });
+  if (!encounter) return res.status(404).json({ message: 'Visit not found' });
   const vitals = await query('SELECT * FROM vitals WHERE encounter_id = ?', [id]);
   const symptoms = await query('SELECT * FROM symptoms WHERE encounter_id = ?', [id]);
   const [ar] = await query('SELECT result_json FROM ai_results WHERE encounter_id = ?', [id]);
@@ -148,7 +148,7 @@ export async function getReportPdf(req, res) {
 
   doc.fontSize(18).text('Clinical Report', { align: 'center' });
   doc.moveDown();
-  doc.fontSize(12).text(`Patient: ${encounter.patient_name}  |  Visit: ${encounter.visit_date}  |  Encounter #${id}`);
+  doc.fontSize(12).text(`Patient: ${encounter.patient_name}  |  Visit: ${encounter.visit_date}  |  Visit #${id}`);
   doc.moveDown();
   doc.text(`Chief Complaint: ${encounter.chief_complaint || '—'}`);
   doc.text(`Doctor Notes: ${encounter.doctor_notes || '—'}`);
