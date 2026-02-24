@@ -34,9 +34,24 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/lab-reports', labReportsRoutes);
 
+// 404 for unknown API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({
+    message: 'Route not found',
+    path: req.originalUrl,
+    code: 'NOT_FOUND',
+  });
+});
+
+// Central error handler
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(err.status || 500).json({ message: err.message || 'Internal server error' });
+  const status = err.status || 500;
+  const code = err.code || (status === 500 ? 'INTERNAL_ERROR' : 'ERROR');
+  res.status(status).json({
+    message: err.message || 'Internal server error',
+    code,
+  });
 });
 
 app.listen(env.port, async () => {

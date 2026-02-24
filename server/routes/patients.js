@@ -10,7 +10,12 @@ router.get('/', requireRole(['admin', 'doctor', 'nurse']), patientController.lis
 router.post('/', requireRole(['admin', 'doctor']), patientController.create);
 router.get('/:id', requireRole(['admin', 'doctor', 'nurse']), patientController.getById);
 router.put('/:id', requireRole(['admin', 'doctor']), patientController.update);
+router.delete('/:id', requireRole(['admin', 'doctor']), patientController.remove);
 router.get('/:patientId/encounters', requireRole(['admin', 'doctor', 'nurse']), patientController.listEncounters);
 router.post('/:patientId/encounters', requireRole(['admin', 'doctor']), patientController.createEncounter);
+
+// Alias: "visits" terminology for easier UX
+router.get('/:patientId/visits', requireRole(['admin', 'doctor', 'nurse']), patientController.listEncounters);
+router.post('/:patientId/visits', requireRole(['admin', 'doctor']), patientController.createEncounter);
 
 export default router;

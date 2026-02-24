@@ -6,7 +6,7 @@ const navItems = [
   { to: '/', label: 'Dashboard' },
   { to: '/add-patient', label: 'Add Patient', roles: ['admin', 'doctor'] },
   { to: '/patients', label: 'Patient Records' },
-  { to: '/encounters', label: 'Encounters' },
+  { to: '/encounters', label: 'Visits' },
   { to: '/ai-diagnosis', label: 'AI Diagnosis', roles: ['admin', 'doctor'] },
   { to: '/lab-reports', label: 'Lab Reports' },
   { to: '/reports', label: 'Reports & Analytics' },

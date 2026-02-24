@@ -44,6 +44,24 @@ export async function list(req, res) {
       params.push(dateTo);
     }
 
+    /* ======================
+       Disease Filtering (single-query)
+       Avoid N+1: use EXISTS against ai_results JSON
+    ====================== */
+    if (disease) {
+      where += `
+        AND EXISTS (
+          SELECT 1
+          FROM encounters e
+          JOIN ai_results ar ON ar.encounter_id = e.id
+          WHERE e.patient_id = p.id
+            AND ar.result_json IS NOT NULL
+            AND LOWER(CAST(ar.result_json AS CHAR)) LIKE ?
+        )
+      `;
+      params.push(`%${disease.toLowerCase()}%`);
+    }
+
     const baseSql = `
       SELECT p.id, p.name, p.age, p.gender, p.risk_level, p.created_at,
              (
@@ -55,49 +73,6 @@ export async function list(req, res) {
       WHERE ${where}
       ORDER BY last_visit_date IS NULL, last_visit_date DESC, p.id DESC
     `;
-
-    /* ======================
-       Disease Filtering
-    ====================== */
-    if (disease) {
-      const allRows = await query(baseSql, params);
-      const filtered = [];
-
-      for (const row of allRows) {
-        const aiResults = await query(
-          `
-          SELECT result_json
-          FROM ai_results ar
-          JOIN encounters e ON e.id = ar.encounter_id
-          WHERE e.patient_id = ?
-          `,
-          [row.id]
-        );
-
-        const hasDisease = aiResults.some(
-          (a) =>
-            a.result_json &&
-            JSON.stringify(a.result_json)
-              .toLowerCase()
-              .includes(disease.toLowerCase())
-        );
-
-        if (hasDisease) filtered.push(row);
-      }
-
-      const total = filtered.length;
-      const paginated = filtered.slice(offset, offset + limit);
-
-      return res.json({
-        patients: paginated,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit) || 1,
-        },
-      });
-    }
 
     /* ======================
        Count
@@ -409,40 +384,107 @@ export async function listEncounters(req, res) {
 ===================================================== */
 export async function createEncounter(req, res) {
   const patientId = req.params.patientId;
-  const { visit_date, chief_complaint, doctor_notes, follow_up_date } = req.body;
+  const {
+    visit_date,
+    chief_complaint,
+    doctor_notes,
+    follow_up_date,
+    symptoms,
+    blood_pressure_systolic,
+    blood_pressure_diastolic,
+    blood_sugar,
+    heart_rate,
+    temperature,
+  } = req.body;
 
   if (!visit_date) {
     return res.status(400).json({ message: 'visit_date is required' });
   }
 
-  const [p] = await query(
-    'SELECT id FROM patients WHERE id = ?',
-    [patientId]
-  );
+  const conn = await getConnection();
+  try {
+    await conn.beginTransaction();
 
-  if (!p) {
-    return res.status(404).json({ message: 'Patient not found' });
+    const [patients] = await conn.execute('SELECT id FROM patients WHERE id = ?', [patientId]);
+    if (!patients.length) {
+      await conn.rollback();
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+
+    const [insertEnc] = await conn.execute(
+      `INSERT INTO encounters
+       (patient_id, visit_date, chief_complaint,
+        doctor_notes, follow_up_date, created_by)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        patientId,
+        visit_date,
+        chief_complaint ?? null,
+        doctor_notes ?? null,
+        follow_up_date ?? null,
+        req.user.id,
+      ]
+    );
+
+    const encounterId = insertEnc.insertId;
+
+    if (symptoms) {
+      await conn.execute('INSERT INTO symptoms (encounter_id, symptom_text) VALUES (?, ?)', [
+        encounterId,
+        symptoms,
+      ]);
+    }
+
+    if (
+      blood_pressure_systolic != null ||
+      blood_pressure_diastolic != null ||
+      blood_sugar != null ||
+      heart_rate != null ||
+      temperature != null
+    ) {
+      await conn.execute(
+        `INSERT INTO vitals
+         (encounter_id, blood_pressure_systolic,
+          blood_pressure_diastolic, blood_sugar,
+          heart_rate, temperature)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          encounterId,
+          blood_pressure_systolic ?? null,
+          blood_pressure_diastolic ?? null,
+          blood_sugar ?? null,
+          heart_rate ?? null,
+          temperature ?? null,
+        ]
+      );
+    }
+
+    await conn.commit();
+
+    const [encRows] = await conn.execute('SELECT * FROM encounters WHERE id = ?', [encounterId]);
+    const encounter = encRows?.[0] || null;
+    res.status(201).json(encounter);
+  } catch (err) {
+    await conn.rollback();
+    console.error('Error creating encounter:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    conn.release();
   }
+}
 
-  const result = await query(
-    `INSERT INTO encounters
-     (patient_id, visit_date, chief_complaint,
-      doctor_notes, follow_up_date, created_by)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [
-      patientId,
-      visit_date,
-      chief_complaint ?? null,
-      doctor_notes ?? null,
-      follow_up_date ?? null,
-      req.user.id,
-    ]
-  );
-
-  const [encounter] = await query(
-    'SELECT * FROM encounters WHERE id = ?',
-    [result.insertId]
-  );
-
-  res.status(201).json(encounter);
+/* =====================================================
+   DELETE PATIENT
+===================================================== */
+export async function remove(req, res) {
+  const id = req.params.id;
+  try {
+    const [patient] = await query('SELECT id FROM patients WHERE id = ?', [id]);
+    if (!patient) return res.status(404).json({ message: 'Patient not found' });
+    await query('DELETE FROM patients WHERE id = ?', [id]);
+    res.status(204).send();
+  } catch (err) {
+    console.error('Error deleting patient:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 }
