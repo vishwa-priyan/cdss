@@ -19,4 +19,7 @@ export const env = {
   upload: {
     maxSizeMb: parseInt(process.env.UPLOAD_MAX_SIZE_MB || '10', 10),
   },
+  ml: {
+    baseUrl: process.env.ML_SERVICE_URL || 'http://localhost:8000',
+  },
 };

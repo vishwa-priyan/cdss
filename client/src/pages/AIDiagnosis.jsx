@@ -10,6 +10,102 @@ export default function AIDiagnosis() {
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
+  const [mlInputs, setMlInputs] = useState({
+    gate: {
+      Age: '',
+      Gender: '',
+      Total_Bilirubin: '',
+      Direct_Bilirubin: '',
+      ALP: '',
+      ALT: '',
+      AST: '',
+      Total_Protiens: '',
+      Albumin: '',
+      Albumin_and_Globulin_Ratio: '',
+    },
+    cancer: {
+      Age: '',
+      Gender: '',
+      BMI: '',
+      Smoking: '',
+      GeneticRisk: '',
+      PhysicalActivity: '',
+      AlcoholIntake: '',
+      CancerHistory: '',
+    },
+    fatty_liver: {
+      Albumin: '',
+      ALP: '',
+      AST: '',
+      ALT: '',
+      Cholesterol: '',
+      Creatinine: '',
+      Glucose: '',
+      GGT: '',
+      Bilirubin: '',
+      Triglycerides: '',
+      Uric_Acid: '',
+      Platelets: '',
+      HDL: '',
+    },
+    hcv_stage: {
+      Bilirubin: '',
+      Cholesterol: '',
+      Albumin: '',
+      Copper: '',
+      Alk_Phos: '',
+      SGOT: '',
+      Tryglicerides: '',
+      Platelets: '',
+      Prothrombin: '',
+      Status: '',
+      Age: '',
+      Sex: '',
+      Ascites: '',
+      Hepatomegaly: '',
+      Spiders: '',
+      Edema: '',
+      APRI: '',
+      Bilirubin_Albumin: '',
+      Copper_Platelets: '',
+    },
+    hcv_status: {
+      Bilirubin: '',
+      Cholesterol: '',
+      Albumin: '',
+      Copper: '',
+      Alk_Phos: '',
+      SGOT: '',
+      Tryglicerides: '',
+      Platelets: '',
+      Prothrombin: '',
+      Age: '',
+      Sex: '',
+      Ascites: '',
+      Hepatomegaly: '',
+      Spiders: '',
+      Edema: '',
+      APRI: '',
+      ALBI_Score: '',
+      Bili_Alb_Ratio: '',
+    },
+    hcv_complications: {
+      Bilirubin: '',
+      Cholesterol: '',
+      Albumin: '',
+      Copper: '',
+      Alk_Phos: '',
+      SGOT: '',
+      Tryglicerides: '',
+      Platelets: '',
+      Prothrombin: '',
+      Age: '',
+      Sex: '',
+      Hepatomegaly: '',
+      Spiders: '',
+      Edema: '',
+    },
+  });
 
   useEffect(() => {
     if (encounterId) {
@@ -30,12 +126,22 @@ export default function AIDiagnosis() {
     }
   }, [encounterId]);
 
+  const handleMlChange = (modelKey, field, value) => {
+    setMlInputs((prev) => ({
+      ...prev,
+      [modelKey]: {
+        ...prev[modelKey],
+        [field]: value,
+      },
+    }));
+  };
+
   const runDiagnosis = () => {
     if (!encounterId) return;
     setRunning(true);
     setError('');
     api
-      .post(`/encounters/${encounterId}/ai-diagnosis`)
+      .post(`/encounters/${encounterId}/ai-diagnosis`, { mlInputs })
       .then(({ data }) => setResult(data))
       .catch((e) => setError(e.response?.data?.message || 'AI diagnosis failed'))
       .finally(() => setRunning(false));
@@ -61,6 +167,98 @@ export default function AIDiagnosis() {
           <p>Select an encounter from <a href="/encounters">Encounters</a> or open a patient to run AI diagnosis.</p>
         </div>
       )}
+      <div className="card">
+        <h3>Liver Model Inputs</h3>
+        <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+          Enter available lab and clinical values. Leave fields blank if not available – the corresponding model may be skipped or less reliable.
+        </p>
+        <div className="form-grid">
+          <h4>Gate Model (Dispatcher)</h4>
+          <div className="form-row">
+            {Object.entries(mlInputs.gate).map(([key, val]) => (
+              <div className="form-group" key={key}>
+                <label>{key}</label>
+                <input
+                  value={val}
+                  onChange={(e) => handleMlChange('gate', key, e.target.value)}
+                  type="number"
+                  step="0.01"
+                />
+              </div>
+            ))}
+          </div>
+          <h4>Liver Cancer Risk Model</h4>
+          <div className="form-row">
+            {Object.entries(mlInputs.cancer).map(([key, val]) => (
+              <div className="form-group" key={key}>
+                <label>{key}</label>
+                <input
+                  value={val}
+                  onChange={(e) => handleMlChange('cancer', key, e.target.value)}
+                  type="number"
+                  step="0.01"
+                />
+              </div>
+            ))}
+          </div>
+          <h4>Fatty Liver Model</h4>
+          <div className="form-row">
+            {Object.entries(mlInputs.fatty_liver).map(([key, val]) => (
+              <div className="form-group" key={key}>
+                <label>{key}</label>
+                <input
+                  value={val}
+                  onChange={(e) => handleMlChange('fatty_liver', key, e.target.value)}
+                  type="number"
+                  step="0.01"
+                />
+              </div>
+            ))}
+          </div>
+          <h4>Hepatitis C Stage Model</h4>
+          <div className="form-row">
+            {Object.entries(mlInputs.hcv_stage).map(([key, val]) => (
+              <div className="form-group" key={key}>
+                <label>{key}</label>
+                <input
+                  value={val}
+                  onChange={(e) => handleMlChange('hcv_stage', key, e.target.value)}
+                  type="number"
+                  step="0.01"
+                />
+              </div>
+            ))}
+          </div>
+          <h4>Hepatitis C Status Model</h4>
+          <div className="form-row">
+            {Object.entries(mlInputs.hcv_status).map(([key, val]) => (
+              <div className="form-group" key={key}>
+                <label>{key}</label>
+                <input
+                  value={val}
+                  onChange={(e) => handleMlChange('hcv_status', key, e.target.value)}
+                  type="number"
+                  step="0.01"
+                />
+              </div>
+            ))}
+          </div>
+          <h4>Hepatitis Complications Model</h4>
+          <div className="form-row">
+            {Object.entries(mlInputs.hcv_complications).map(([key, val]) => (
+              <div className="form-group" key={key}>
+                <label>{key}</label>
+                <input
+                  value={val}
+                  onChange={(e) => handleMlChange('hcv_complications', key, e.target.value)}
+                  type="number"
+                  step="0.01"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
       {error && <div className="error">{error}</div>}
       {result && (
         <>
@@ -106,6 +304,26 @@ export default function AIDiagnosis() {
             <h3>Explainable Summary (for Doctor)</h3>
             <p>{result.explainableSummary}</p>
           </div>
+          {result.mlModels && (
+            <div className="card">
+              <h3>Liver Model Outputs</h3>
+              {result.mlModels.error && (
+                <p className="error">{result.mlModels.error}</p>
+              )}
+              {!result.mlModels.error && (
+                <ul>
+                  {Object.entries(result.mlModels).map(([key, val]) => (
+                    <li key={key}>
+                      <strong>{key}:</strong>{' '}
+                      {val && val.available
+                        ? `prediction=${val.prediction} prob=${val.probability != null ? (val.probability * 100).toFixed(1) + '%' : 'n/a'}`
+                        : (val && val.reason) || 'not available'}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

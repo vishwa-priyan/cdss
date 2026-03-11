@@ -121,7 +121,8 @@ export async function runAIDiagnosis(req, res) {
   );
   const encounter = encRows[0];
   if (!encounter) return res.status(404).json({ message: 'Encounter not found' });
-  const result = await runAI(encounter);
+  const mlInputs = req.body?.mlInputs || {};
+  const result = await runAI(encounter, mlInputs);
   await query('INSERT INTO ai_results (encounter_id, result_json) VALUES (?, ?) ON DUPLICATE KEY UPDATE result_json = VALUES(result_json)', [
     encounterId,
     JSON.stringify(result),
