@@ -19,4 +19,7 @@ export const env = {
   upload: {
     maxSizeMb: parseInt(process.env.UPLOAD_MAX_SIZE_MB || '10', 10),
   },
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY || '',
+  },
 };
