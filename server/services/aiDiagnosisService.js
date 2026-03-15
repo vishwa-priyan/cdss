@@ -1,32 +1,44 @@
-/**
- * Stub AI Diagnosis Service.
- * Replace with real agents: Symptom Analysis, RAG Retrieval, Disease Prediction, Explainability.
- */
 export async function runAIDiagnosis(encounter) {
-  const symptomText = encounter.symptom_text || '';
-  return {
-    symptomAnalysis: {
-      summary: symptomText || 'No symptoms recorded.',
-      structuredSymptoms: symptomText
-        ? symptomText.split(/[,;]/).map((s) => s.trim()).filter(Boolean).map((s) => ({ symptom: s, severity: 'moderate' }))
-        : [],
-    },
-    ragSnippets: [
-      { source: 'Guideline Ref 1', text: 'Consider differential diagnosis based on presenting symptoms and vitals.' },
-      { source: 'Protocol A', text: 'Follow-up recommended within 7 days for unresolved symptoms.' },
-    ],
-    diseasePrediction: {
-      primary: 'Provisional diagnosis pending full assessment',
-      differential: ['Symptom-based evaluation', 'Clinical correlation recommended'],
-      suggestedTests: ['Routine lab panel', 'Follow-up vitals'],
-      suggestedMedications: ['As per clinical judgment'],
-    },
-    riskStratification: 'medium',
-    confidenceScore: 0.72,
-    protocolReferences: ['CDSS-REF-001', 'CDSS-REF-002'],
-    explainableSummary: 'AI analysis based on reported symptoms and encounter data. Recommend clinician review and correlation with physical examination and history.',
-    redFlags: symptomText.toLowerCase().includes('chest') || symptomText.toLowerCase().includes('breath')
-      ? ['Cardiorespiratory symptoms noted – consider urgent evaluation if severe.']
-      : [],
-  };
+  try {
+    const symptomText = encounter.symptom_text || '';
+    
+    // Call the Python AI Microservice
+    const response = await fetch('http://localhost:8000/diagnose', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ symptom_text: symptomText }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Python AI Service failed (${response.status}): ${errorText}`);
+    }
+
+    const aiResult = await response.json();
+    return aiResult;
+  } catch (error) {
+    console.error('AI Orchestration Proxy failed:', error);
+    // Return graceful fallback if Python service is down
+    return {
+      symptomAnalysis: {
+        summary: 'AI Service Unavailable',
+        structuredSymptoms: [],
+      },
+      ragSnippets: [],
+      diseasePrediction: {
+        primary: 'Service Offline',
+        differential: [],
+        suggestedTests: [],
+        suggestedMedications: [],
+      },
+      riskStratification: 'medium',
+      confidenceScore: 0.0,
+      protocolReferences: [],
+      explainableSummary: 'The Python AI microservice is currently unreachable or encountered an error. Please ensure it is running on port 8000.',
+      redFlags: [],
+    };
+  }
 }
+
