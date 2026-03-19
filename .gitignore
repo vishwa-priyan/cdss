@@ -8,3 +8,11 @@ server/uploads/*
 !server/uploads/.gitkeep
 .cursor/
 *.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
