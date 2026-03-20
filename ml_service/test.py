@@ -1,6 +1,6 @@
 import joblib
 
-model = joblib.load("models/gate_model.pkl")
+model = joblib.load("models/hepatitisC_stage_model.pkl")
 
 print(type(model))
 
