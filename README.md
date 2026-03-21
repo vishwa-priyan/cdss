@@ -16,6 +16,8 @@ Production-ready CDSS dashboard for doctors: multi-agent AI framework (symptom a
    ```bash
    npm run install:all
    ```
+   Create a python venv `python -m venv venv`
+   activate venv `venv\Scripts\activate`
 
 2. **Database**
    - Create MySQL database: `CREATE DATABASE cdss;`
@@ -26,6 +28,8 @@ Production-ready CDSS dashboard for doctors: multi-agent AI framework (symptom a
 3. **Run**
    - Dev (both client and server): `npm run dev`
    - Or: `npm run server` (port 5000) and `npm run client` (Vite dev server)
+   - ml models run using `cd ml_service` and `uvicorn main:app --reload --host 0.0.0.0 --port 8000`
+   use scikit-learn==1.6.1 only.
 
 ## Default Roles
 
